@@ -1,0 +1,43 @@
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+
+# Binary
+rpc-cli
+jsonrpc
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+
+# GoReleaser
+.goreleaser.yml.bak
+
+# Temporary files
+*.tmp
+*.log
+
+# Claude Code
+.claude/
