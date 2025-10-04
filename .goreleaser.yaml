@@ -1,0 +1,161 @@
+project_name: rpc-cli
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+builds:
+  - id: rpc-cli
+    main: ./cmd/rpc-cli
+    binary: rpc-cli
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: rpc-cli
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - CHANGELOG.md
+      - ARCHITECTURE.md
+      - requests.hcl
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "^ci:"
+  groups:
+    - title: Features
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: "Bug fixes"
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: "Enhancements"
+      regexp: "^.*enhance[(\\w)]*:+.*$"
+      order: 2
+    - title: Others
+      order: 999
+
+release:
+  github:
+    owner: gelleson
+    name: rpc-cli
+  draft: false
+  prerelease: auto
+  mode: append
+  name_template: "v{{.Version}}"
+  header: |
+    ## rpc-cli {{.Version}}
+
+    Execute JSON-RPC requests defined in HCL configuration files.
+
+    ### Installation
+
+    #### Binary Download
+    Download the appropriate binary for your platform from the assets below.
+
+    #### Homebrew (macOS/Linux)
+    ```bash
+    brew install gelleson/tap/rpc-cli
+    ```
+
+    #### Go Install
+    ```bash
+    go install github.com/gelleson/rpc-cli/cmd/rpc-cli@{{.Version}}
+    ```
+
+    ### What's Changed
+
+  footer: |
+    **Full Changelog**: https://github.com/gelleson/rpc-cli/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+brews:
+  - name: rpc-cli
+    repository:
+      owner: gelleson
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    folder: Formula
+    homepage: https://github.com/gelleson/rpc-cli
+    description: "Execute JSON-RPC requests defined in HCL configuration files"
+    license: MIT
+    test: |
+      system "#{bin}/rpc-cli --help"
+    install: |
+      bin.install "rpc-cli"
+
+dockers:
+  - image_templates:
+      - "ghcr.io/gelleson/rpc-cli:{{ .Version }}-amd64"
+      - "ghcr.io/gelleson/rpc-cli:latest-amd64"
+    use: buildx
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+
+  - image_templates:
+      - "ghcr.io/gelleson/rpc-cli:{{ .Version }}-arm64"
+      - "ghcr.io/gelleson/rpc-cli:latest-arm64"
+    use: buildx
+    goarch: arm64
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--platform=linux/arm64"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+
+docker_manifests:
+  - name_template: "ghcr.io/gelleson/rpc-cli:{{ .Version }}"
+    image_templates:
+      - "ghcr.io/gelleson/rpc-cli:{{ .Version }}-amd64"
+      - "ghcr.io/gelleson/rpc-cli:{{ .Version }}-arm64"
+
+  - name_template: "ghcr.io/gelleson/rpc-cli:latest"
+    image_templates:
+      - "ghcr.io/gelleson/rpc-cli:latest-amd64"
+      - "ghcr.io/gelleson/rpc-cli:latest-arm64"
+
+announce:
+  skip: true
