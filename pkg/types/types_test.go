@@ -10,6 +10,7 @@ func TestNewConfig(t *testing.T) {
 
 	if config == nil {
 		t.Fatal("NewConfig() returned nil")
+		return
 	}
 
 	if config.Headers == nil {
@@ -27,6 +28,7 @@ func TestNewRequest(t *testing.T) {
 
 	if req == nil {
 		t.Fatal("NewRequest() returned nil")
+		return
 	}
 
 	if req.Name != name {
@@ -43,6 +45,7 @@ func TestNewHCLFile(t *testing.T) {
 
 	if hclFile == nil {
 		t.Fatal("NewHCLFile() returned nil")
+		return
 	}
 
 	if hclFile.Configs == nil {
@@ -63,6 +66,7 @@ func TestNewJSONRPCRequest(t *testing.T) {
 
 	if req == nil {
 		t.Fatal("NewJSONRPCRequest() returned nil")
+		return
 	}
 
 	if req.JSONRPC != "2.0" {
@@ -168,6 +172,7 @@ func TestNewEffectiveConfig(t *testing.T) {
 
 	if config == nil {
 		t.Fatal("NewEffectiveConfig() returned nil")
+		return
 	}
 
 	if config.Headers == nil {
@@ -184,6 +189,7 @@ func TestNewCLIOverrides(t *testing.T) {
 
 	if overrides == nil {
 		t.Fatal("NewCLIOverrides() returned nil")
+		return
 	}
 
 	if overrides.Headers == nil {

@@ -222,8 +222,11 @@ func (f *Formatter) formatExecutionResultsJSON(results []*types.ExecutionResult)
 		} else {
 			resultMap["success"] = true
 			var resultObj interface{}
-			json.Unmarshal(result.Response.Result, &resultObj)
-			resultMap["result"] = resultObj
+			if err := json.Unmarshal(result.Response.Result, &resultObj); err == nil {
+				resultMap["result"] = resultObj
+			} else {
+				resultMap["result"] = string(result.Response.Result)
+			}
 		}
 
 		output = append(output, resultMap)
