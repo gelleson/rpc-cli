@@ -41,12 +41,6 @@ jobs:
       - name: Run tests
         run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
 
-      - name: Upload coverage
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./coverage.txt
-          flags: unittests
-
       - name: Build
         run: go build -o rpc-cli ./cmd/rpc-cli
 
