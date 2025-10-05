@@ -1,3 +1,5 @@
+version: 2
+
 project_name: rpc-cli
 
 before:
@@ -35,9 +37,10 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    format_overrides:
-      - goos: windows
-        format: zip
+    format: tar.gz
+    formats:
+      - tar.gz
+      - zip
     files:
       - README.md
       - CHANGELOG.md
@@ -48,7 +51,7 @@ checksum:
   name_template: "checksums.txt"
 
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+  version_template: "{{ incpatch .Version }}-next"
 
 changelog:
   sort: asc
@@ -75,7 +78,7 @@ changelog:
 release:
   github:
     owner: gelleson
-    name: jsonrpc
+    name: rpc-cli
   draft: false
   prerelease: auto
   mode: append
@@ -92,18 +95,18 @@ release:
 
     #### Install Script
     ```bash
-    curl -sSL https://raw.githubusercontent.com/gelleson/jsonrpc/main/install.sh | bash
+    curl -sSL https://raw.githubusercontent.com/gelleson/rpc-cli/main/install.sh | bash
     ```
 
     #### Go Install
     ```bash
-    go install github.com/gelleson/jsonrpc/cmd/rpc-cli@{{.Version}}
+    go install github.com/gelleson/rpc-cli/cmd/rpc-cli@{{.Version}}
     ```
 
     ### What's Changed
 
   footer: |
-    **Full Changelog**: https://github.com/gelleson/jsonrpc/compare/{{ .PreviousTag }}...{{ .Tag }}
+    **Full Changelog**: https://github.com/gelleson/rpc-cli/compare/{{ .PreviousTag }}...{{ .Tag }}
 
 announce:
   skip: true
