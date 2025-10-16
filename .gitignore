@@ -40,4 +40,6 @@ build/
 *.log
 
 # Claude Code
-.claude/
+# Only ignore local settings, not commands
+.claude/settings.local.json
+.claude/settings.json

@@ -69,6 +69,17 @@ git tag -a v0.2.0 -m "Release v0.2.0"
 git push origin v0.2.0
 ```
 
+### Claude Commands
+```bash
+# Generate changelog based on current state and previous tag
+/generate-changelog
+
+# Generate changelog since specific tag
+/generate-changelog v0.1.0
+```
+
+The `/generate-changelog` command parses git commits using Conventional Commits format and generates a formatted changelog entry ready for CHANGELOG.md. It automatically categorizes commits by type (Features, Bug Fixes, Enhancements, etc.).
+
 ## Architecture Overview
 
 ### Package Structure
