@@ -5,7 +5,7 @@ set -e
 # Configuration
 BINARY_NAME="rpc-cli"
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
-REPO="gelleson/jsonrpc"
+REPO="gelleson/rpc-cli"
 
 # Detect OS and architecture
 OS="$(uname -s)"
@@ -37,20 +37,20 @@ fi
 echo "Latest version: $VERSION"
 
 # Construct download URL
-DOWNLOAD_URL="https://github.com/$REPO/releases/download/$VERSION/${BINARY_NAME}_${OS}_${ARCH}"
-
-if [ "$OS" = "windows" ]; then
-    DOWNLOAD_URL="${DOWNLOAD_URL}.exe"
-    BINARY_NAME="${BINARY_NAME}.exe"
-fi
+ARCHIVE_NAME="${BINARY_NAME}_${VERSION#v}_${OS}_${ARCH}.tar.gz"
+DOWNLOAD_URL="https://github.com/$REPO/releases/download/$VERSION/$ARCHIVE_NAME"
 
 # Create temporary directory
 TMP_DIR=$(mktemp -d)
 trap "rm -rf $TMP_DIR" EXIT
 
-# Download binary
+# Download archive
 echo "Downloading from $DOWNLOAD_URL..."
-curl -sL "$DOWNLOAD_URL" -o "$TMP_DIR/$BINARY_NAME"
+curl -sL "$DOWNLOAD_URL" -o "$TMP_DIR/$ARCHIVE_NAME"
+
+# Extract binary
+echo "Extracting binary..."
+tar xz -C "$TMP_DIR" -f "$TMP_DIR/$ARCHIVE_NAME" "$BINARY_NAME"
 
 # Make executable
 chmod +x "$TMP_DIR/$BINARY_NAME"
