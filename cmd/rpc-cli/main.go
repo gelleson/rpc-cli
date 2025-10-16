@@ -77,6 +77,9 @@ func runCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run <file> [request_names...]",
 		Short: "Execute requests",
+		Aliases: []string{
+			"r",
+		},
 		Long: `Execute all requests or specific requests from an HCL file.
 With no request names, executes all requests.
 With request names, executes only specified requests.`,
@@ -95,7 +98,10 @@ With request names, executes only specified requests.`,
 
 func validateCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "validate <file>",
+		Use: "validate <file>",
+		Aliases: []string{
+			"v",
+		},
 		Short: "Validate HCL syntax",
 		Long:  `Validate HCL file syntax, check required fields, and verify config references.`,
 		Args:  cobra.ExactArgs(1),
