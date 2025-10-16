@@ -18,10 +18,10 @@ A command-line tool for executing JSON-RPC requests defined in HCL configuration
 
 Download pre-built binaries from the [releases page](https://github.com/gelleson/rpc-cli/releases).
 
-### Homebrew (macOS/Linux)
+### Install Script
 
 ```bash
-brew install gelleson/tap/rpc-cli
+curl -sSL https://raw.githubusercontent.com/gelleson/rpc-cli/main/install.sh | bash
 ```
 
 ### Go Install
@@ -82,15 +82,11 @@ git push origin v1.0.0
 # - Build binaries for multiple platforms (Linux, macOS, Windows)
 # - Create GitHub release with changelog
 # - Publish Docker images to GitHub Container Registry
-# - Update Homebrew tap
 ```
 
 Local release testing:
 
 ```bash
-# Install GoReleaser
-brew install goreleaser
-
 # Test release locally (without publishing)
 goreleaser release --snapshot --clean
 
