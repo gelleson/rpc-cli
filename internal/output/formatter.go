@@ -27,7 +27,7 @@ func (f *Formatter) FormatRequestList(hclFile *types.HCLFile, requests []*types.
 	fmt.Printf("%-25s %-30s %-15s %-10s\n", "NAME", "METHOD", "CONFIG", "PARAMS")
 	fmt.Println(strings.Repeat("-", 85))
 
-	// Print each request
+	//rint each request
 	for _, req := range requests {
 		configName := executor.GetConfigName(req, overrides)
 		paramCount := executor.CountParams(req.ProcessedParams)

@@ -148,7 +148,7 @@ func (e *Executor) executeJSONRPC(config *types.EffectiveConfig, req *types.Requ
 	}
 
 	// Check HTTP status
-	if httpResp.StatusCode != http.StatusOK {
+	if httpResp.StatusCode >= http.StatusBadRequest {
 		return nil, fmt.Errorf("HTTP error: %d %s - %s", httpResp.StatusCode, httpResp.Status, string(respBody))
 	}
 
