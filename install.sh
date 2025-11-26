@@ -50,7 +50,7 @@ curl -sL "$DOWNLOAD_URL" -o "$TMP_DIR/$ARCHIVE_NAME"
 
 # Extract binary
 echo "Extracting binary..."
-tar xz -C "$TMP_DIR" -f "$TMP_DIR/$ARCHIVE_NAME" "$BINARY_NAME"
+cd "$TMP_DIR" && tar xzf "$ARCHIVE_NAME" "$BINARY_NAME"
 
 # Make executable
 chmod +x "$TMP_DIR/$BINARY_NAME"
