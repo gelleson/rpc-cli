@@ -4,7 +4,7 @@
 # Generates changelog entries based on git commits between tags using Conventional Commits format
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-cd "$REPO_DIR"
+cd "$REPO_DIR" || exit 1
 
 # Get the previous tag (default to most recent tag if not specified)
 PREV_TAG=""
