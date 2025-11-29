@@ -57,9 +57,9 @@ jobs:
           go-version: "1.24"
 
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v7
         with:
-          version: v6.1.0
+          version: v2.6.0
           args: --timeout=5m
 
       - name: Check gofmt
