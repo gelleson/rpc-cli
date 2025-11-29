@@ -52,7 +52,7 @@ func TestGetConfigName(t *testing.T) {
 func TestCountParams(t *testing.T) {
 	tests := []struct {
 		name   string
-		params interface{}
+		params any
 		want   int
 	}{
 		{
@@ -62,22 +62,22 @@ func TestCountParams(t *testing.T) {
 		},
 		{
 			name:   "empty slice",
-			params: []interface{}{},
+			params: []any{},
 			want:   0,
 		},
 		{
 			name:   "slice with items",
-			params: []interface{}{"a", "b", "c"},
+			params: []any{"a", "b", "c"},
 			want:   3,
 		},
 		{
 			name:   "empty map",
-			params: map[string]interface{}{},
+			params: map[string]any{},
 			want:   0,
 		},
 		{
 			name: "map with items",
-			params: map[string]interface{}{
+			params: map[string]any{
 				"key1": "value1",
 				"key2": "value2",
 			},

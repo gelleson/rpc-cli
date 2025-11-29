@@ -3,6 +3,8 @@ package parser
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"jsonrpc/pkg/types"
 
@@ -24,8 +26,15 @@ func New() *Parser {
 }
 
 // ParseFile parses an HCL file and returns the structured data
+// #nosec G304 - This is a CLI tool that intentionally reads user-specified files
 func (p *Parser) ParseFile(filename string) (*types.HCLFile, error) {
-	src, err := os.ReadFile(filename)
+	// Basic path security validation for CLI tool
+	cleanPath := filepath.Clean(filename)
+	if strings.Contains(cleanPath, "..") {
+		return nil, fmt.Errorf("path traversal detected: %s", filename)
+	}
+
+	src, err := os.ReadFile(cleanPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}

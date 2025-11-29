@@ -59,7 +59,7 @@ func TestNewHCLFile(t *testing.T) {
 
 func TestNewJSONRPCRequest(t *testing.T) {
 	method := "eth_blockNumber"
-	params := []interface{}{}
+	params := []any{}
 	id := 1
 
 	req := NewJSONRPCRequest(method, params, id)

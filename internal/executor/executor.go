@@ -9,27 +9,36 @@ import (
 	"net/http"
 	"time"
 
+	"jsonrpc/pkg/config"
+	"jsonrpc/pkg/constants"
 	"jsonrpc/pkg/types"
 )
 
 // Executor handles JSON-RPC request execution
 type Executor struct {
-	client *http.Client
+	client    *http.Client
+	configMgr *config.Manager
 }
 
 // New creates a new Executor instance
 func New() *Executor {
 	return &Executor{
-		client: &http.Client{},
+		client:    &http.Client{},
+		configMgr: config.NewManager(),
 	}
 }
 
 // Execute executes a single JSON-RPC request
-func (e *Executor) Execute(hclFile *types.HCLFile, req *types.Request, overrides *types.CLIOverrides, requestID int) (*types.ExecutionResult, error) {
+func (e *Executor) Execute(
+	hclFile *types.HCLFile,
+	req *types.Request,
+	overrides *types.CLIOverrides,
+	requestID int,
+) (*types.ExecutionResult, error) {
 	startTime := time.Now()
 
-	// Build effective configuration
-	config := e.buildEffectiveConfig(hclFile, req, overrides)
+	// Build effective configuration using the new configuration manager
+	config := e.configMgr.BuildForRequest(hclFile, req, overrides)
 
 	// Validate URL
 	if config.URL == "" {
@@ -58,7 +67,11 @@ func (e *Executor) Execute(hclFile *types.HCLFile, req *types.Request, overrides
 }
 
 // ExecuteAll executes multiple requests
-func (e *Executor) ExecuteAll(hclFile *types.HCLFile, requests []*types.Request, overrides *types.CLIOverrides) ([]*types.ExecutionResult, error) {
+func (e *Executor) ExecuteAll(
+	hclFile *types.HCLFile,
+	requests []*types.Request,
+	overrides *types.CLIOverrides,
+) ([]*types.ExecutionResult, error) {
 	results := make([]*types.ExecutionResult, 0, len(requests))
 
 	for i, req := range requests {
@@ -72,40 +85,18 @@ func (e *Executor) ExecuteAll(hclFile *types.HCLFile, requests []*types.Request,
 	return results, nil
 }
 
-// buildEffectiveConfig merges configurations following priority order
-func (e *Executor) buildEffectiveConfig(hclFile *types.HCLFile, req *types.Request, overrides *types.CLIOverrides) *types.EffectiveConfig {
-	config := types.NewEffectiveConfig()
-	merger := NewConfigMerger()
-
-	// 1. Start with default config
-	if defaultConfig, exists := hclFile.Configs["default"]; exists {
-		merger.MergeFromConfig(config, defaultConfig)
-	}
-
-	// 2. Apply named config if specified
-	configName := req.Config
-	if overrides != nil && overrides.Config != "" {
-		configName = overrides.Config
-	}
-	if configName != "" && configName != "default" {
-		if namedConfig, exists := hclFile.Configs[configName]; exists {
-			merger.MergeFromConfig(config, namedConfig)
-		}
-	}
-
-	// 3. Apply request-level overrides
-	merger.MergeFromRequest(config, req)
-
-	// 4. Apply CLI overrides (highest priority)
-	if overrides != nil {
-		merger.MergeFromCLI(config, overrides)
-	}
-
-	return config
+// GetConfigName returns the effective configuration name for a request
+// This maintains backward compatibility for the output formatter
+func (e *Executor) GetConfigName(req *types.Request, overrides *types.CLIOverrides) string {
+	return config.GetConfigName(req, overrides)
 }
 
 // executeJSONRPC executes a JSON-RPC request and returns the response
-func (e *Executor) executeJSONRPC(config *types.EffectiveConfig, req *types.Request, requestID int) (*types.JSONRPCResponse, error) {
+func (e *Executor) executeJSONRPC(
+	config *types.EffectiveConfig,
+	req *types.Request,
+	requestID int,
+) (*types.JSONRPCResponse, error) {
 	// Create JSON-RPC request
 	rpcReq := types.NewJSONRPCRequest(req.Method, req.ProcessedParams, requestID)
 
@@ -122,7 +113,7 @@ func (e *Executor) executeJSONRPC(config *types.EffectiveConfig, req *types.Requ
 	}
 
 	// Add headers
-	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Content-Type", constants.HeaderContentType)
 	for k, v := range config.Headers {
 		httpReq.Header.Set(k, v)
 	}
@@ -148,7 +139,7 @@ func (e *Executor) executeJSONRPC(config *types.EffectiveConfig, req *types.Requ
 	}
 
 	// Check HTTP status
-	if httpResp.StatusCode >= http.StatusBadRequest {
+	if httpResp.StatusCode >= constants.MinClientErrorStatus {
 		return nil, fmt.Errorf("HTTP error: %d %s - %s", httpResp.StatusCode, httpResp.Status, string(respBody))
 	}
 

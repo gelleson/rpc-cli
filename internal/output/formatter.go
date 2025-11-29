@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"jsonrpc/internal/executor"
+	"jsonrpc/pkg/config"
+	"jsonrpc/pkg/constants"
 	"jsonrpc/pkg/types"
 )
 
@@ -22,27 +23,35 @@ func New() *Formatter {
 }
 
 // FormatRequestList formats requests as a table
-func (f *Formatter) FormatRequestList(hclFile *types.HCLFile, requests []*types.Request, overrides *types.CLIOverrides) {
+func (f *Formatter) FormatRequestList(
+	hclFile *types.HCLFile,
+	requests []*types.Request,
+	overrides *types.CLIOverrides,
+) {
 	// Print header
 	fmt.Printf("%-25s %-30s %-15s %-10s\n", "NAME", "METHOD", "CONFIG", "PARAMS")
 	fmt.Println(strings.Repeat("-", 85))
 
-	//rint each request
+	// Print each request
 	for _, req := range requests {
-		configName := executor.GetConfigName(req, overrides)
-		paramCount := executor.CountParams(req.ProcessedParams)
+		configName := config.GetConfigName(req, overrides)
+		paramCount := CountParams(req.ProcessedParams)
 
 		fmt.Printf("%-25s %-30s %-15s %-10d\n",
-			truncate(req.Name, 25),
-			truncate(req.Method, 30),
-			truncate(configName, 15),
+			truncate(req.Name, constants.MaxNameLength),
+			truncate(req.Method, constants.MaxMethodLength),
+			truncate(configName, constants.MaxConfigLength),
 			paramCount,
 		)
 	}
 }
 
 // FormatRequestDetailed formats requests in detailed boxed format
-func (f *Formatter) FormatRequestDetailed(hclFile *types.HCLFile, requests []*types.Request, overrides *types.CLIOverrides) {
+func (f *Formatter) FormatRequestDetailed(
+	hclFile *types.HCLFile,
+	requests []*types.Request,
+	overrides *types.CLIOverrides,
+) {
 	for i, req := range requests {
 		if i > 0 {
 			fmt.Println()
@@ -52,39 +61,27 @@ func (f *Formatter) FormatRequestDetailed(hclFile *types.HCLFile, requests []*ty
 }
 
 // formatSingleRequestDetailed formats a single request in detailed format
-func (f *Formatter) formatSingleRequestDetailed(hclFile *types.HCLFile, req *types.Request, overrides *types.CLIOverrides) {
-	merger := executor.NewConfigMerger()
-	config := types.NewEffectiveConfig()
-
-	// Build effective config for display
-	if defaultConfig, exists := hclFile.Configs["default"]; exists {
-		merger.MergeFromConfig(config, defaultConfig)
-	}
-
-	configName := executor.GetConfigName(req, overrides)
-	if configName != "" && configName != "default" {
-		if namedConfig, exists := hclFile.Configs[configName]; exists {
-			merger.MergeFromConfig(config, namedConfig)
-		}
-	}
-
-	merger.MergeFromRequest(config, req)
-	if overrides != nil {
-		merger.MergeFromCLI(config, overrides)
-	}
+func (f *Formatter) formatSingleRequestDetailed(
+	hclFile *types.HCLFile,
+	req *types.Request,
+	overrides *types.CLIOverrides,
+) {
+	configMgr := config.NewManager()
+	config := configMgr.BuildForRequest(hclFile, req, overrides)
+	configName := configMgr.GetConfigNameForRequest(hclFile, req, overrides)
 
 	// Top border
-	fmt.Println("┌" + strings.Repeat("─", 78) + "┐")
+	fmt.Println("┌" + strings.Repeat("─", constants.BoxWidth) + "┐")
 
 	// Title
 	fmt.Printf("│ %-76s │\n", req.Name)
-	fmt.Println("├" + strings.Repeat("─", 78) + "┤")
+	fmt.Println("├" + strings.Repeat("─", constants.BoxWidth) + "┤")
 
 	// Method
 	fmt.Printf("│ Method:  %-67s │\n", req.Method)
 
 	// URL
-	fmt.Printf("│ URL:     %-67s │\n", truncate(config.URL, 67))
+	fmt.Printf("│ URL:     %-67s │\n", truncate(config.URL, constants.BoxContentWidth-9))
 
 	// Config
 	fmt.Printf("│ Config:  %-67s │\n", configName)
@@ -98,7 +95,7 @@ func (f *Formatter) formatSingleRequestDetailed(hclFile *types.HCLFile, req *typ
 		for k, v := range config.Headers {
 			value := f.masker.MaskIfSensitive(k, v)
 			headerLine := fmt.Sprintf("  %s: %s", k, value)
-			fmt.Printf("│   %-74s │\n", truncate(headerLine, 74))
+			fmt.Printf("│   %-74s │\n", truncate(headerLine, constants.BoxContentWidth-2))
 		}
 	}
 
@@ -108,21 +105,21 @@ func (f *Formatter) formatSingleRequestDetailed(hclFile *types.HCLFile, req *typ
 		paramsJSON, _ := json.MarshalIndent(req.ProcessedParams, "  ", "  ")
 		paramsLines := strings.Split(string(paramsJSON), "\n")
 		for _, line := range paramsLines {
-			fmt.Printf("│   %-74s │\n", truncate(line, 74))
+			fmt.Printf("│   %-74s │\n", truncate(line, constants.BoxContentWidth-2))
 		}
 	} else {
 		fmt.Printf("│ Params:  %-67s │\n", "[]")
 	}
 
 	// Bottom border
-	fmt.Println("└" + strings.Repeat("─", 78) + "┘")
+	fmt.Println("└" + strings.Repeat("─", constants.BoxWidth) + "┘")
 }
 
 // FormatRequestJSON formats requests in JSON format
 func (f *Formatter) FormatRequestJSON(requests []*types.Request) error {
-	output := make([]map[string]interface{}, 0, len(requests))
+	output := make([]map[string]any, 0, len(requests))
 	for _, req := range requests {
-		output = append(output, map[string]interface{}{
+		output = append(output, map[string]any{
 			"name":    req.Name,
 			"method":  req.Method,
 			"params":  req.ProcessedParams,
@@ -182,7 +179,7 @@ func (f *Formatter) FormatExecutionResults(results []*types.ExecutionResult, jso
 		fmt.Printf("  Result:\n")
 
 		// Pretty print result
-		var resultObj interface{}
+		var resultObj any
 		if err := json.Unmarshal(result.Response.Result, &resultObj); err == nil {
 			resultJSON, _ := json.MarshalIndent(resultObj, "  ", "  ")
 			fmt.Printf("  %s\n", string(resultJSON))
@@ -200,10 +197,10 @@ func (f *Formatter) FormatExecutionResults(results []*types.ExecutionResult, jso
 
 // formatExecutionResultsJSON formats execution results in JSON format
 func (f *Formatter) formatExecutionResultsJSON(results []*types.ExecutionResult) {
-	output := make([]map[string]interface{}, 0, len(results))
+	output := make([]map[string]any, 0, len(results))
 
 	for _, result := range results {
-		resultMap := map[string]interface{}{
+		resultMap := map[string]any{
 			"request":  result.Request.Name,
 			"method":   result.Request.Method,
 			"duration": result.Duration.Milliseconds(),
@@ -214,14 +211,14 @@ func (f *Formatter) formatExecutionResultsJSON(results []*types.ExecutionResult)
 			resultMap["error"] = result.Error.Error()
 		} else if result.Response.IsError() {
 			resultMap["success"] = false
-			resultMap["rpc_error"] = map[string]interface{}{
+			resultMap["rpc_error"] = map[string]any{
 				"code":    result.Response.Error.Code,
 				"message": result.Response.Error.Message,
 				"data":    result.Response.Error.Data,
 			}
 		} else {
 			resultMap["success"] = true
-			var resultObj interface{}
+			var resultObj any
 			if err := json.Unmarshal(result.Response.Result, &resultObj); err == nil {
 				resultMap["result"] = resultObj
 			} else {
@@ -234,6 +231,22 @@ func (f *Formatter) formatExecutionResultsJSON(results []*types.ExecutionResult)
 
 	jsonBytes, _ := json.MarshalIndent(output, "", "  ")
 	fmt.Println(string(jsonBytes))
+}
+
+// CountParams returns the number of parameters in a request
+func CountParams(params any) int {
+	if params == nil {
+		return 0
+	}
+
+	switch v := params.(type) {
+	case []any:
+		return len(v)
+	case map[string]any:
+		return len(v)
+	default:
+		return 1
+	}
 }
 
 // truncate truncates a string to a maximum length

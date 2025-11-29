@@ -4,7 +4,7 @@ import "github.com/zclconf/go-cty/cty"
 
 // ConvertCtyToGo converts a cty.Value to native Go types
 // This handles all HCL value types including primitives, lists, and maps
-func ConvertCtyToGo(val cty.Value) interface{} {
+func ConvertCtyToGo(val cty.Value) any {
 	if val.IsNull() {
 		return nil
 	}
@@ -41,8 +41,8 @@ func ConvertCtyToGo(val cty.Value) interface{} {
 }
 
 // convertCtyList converts a cty list or tuple to a Go slice
-func convertCtyList(val cty.Value) []interface{} {
-	var result []interface{}
+func convertCtyList(val cty.Value) []any {
+	var result []any
 	it := val.ElementIterator()
 	for it.Next() {
 		_, elemVal := it.Element()
@@ -52,8 +52,8 @@ func convertCtyList(val cty.Value) []interface{} {
 }
 
 // convertCtyMap converts a cty map or object to a Go map
-func convertCtyMap(val cty.Value) map[string]interface{} {
-	result := make(map[string]interface{})
+func convertCtyMap(val cty.Value) map[string]any {
+	result := make(map[string]any)
 	it := val.ElementIterator()
 	for it.Next() {
 		key, elemVal := it.Element()

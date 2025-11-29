@@ -12,7 +12,7 @@ func TestConvertCtyToGo(t *testing.T) {
 	tests := []struct {
 		name string
 		val  cty.Value
-		want interface{}
+		want any
 	}{
 		{
 			name: "null value",
@@ -51,7 +51,7 @@ func TestConvertCtyToGo(t *testing.T) {
 				cty.StringVal("b"),
 				cty.StringVal("c"),
 			}),
-			want: []interface{}{"a", "b", "c"},
+			want: []any{"a", "b", "c"},
 		},
 		{
 			name: "tuple with mixed types",
@@ -60,7 +60,7 @@ func TestConvertCtyToGo(t *testing.T) {
 				cty.NumberIntVal(42),
 				cty.BoolVal(true),
 			}),
-			want: []interface{}{"hello", 42, true},
+			want: []any{"hello", 42, true},
 		},
 		{
 			name: "map of strings",
@@ -68,7 +68,7 @@ func TestConvertCtyToGo(t *testing.T) {
 				"key1": cty.StringVal("value1"),
 				"key2": cty.StringVal("value2"),
 			}),
-			want: map[string]interface{}{
+			want: map[string]any{
 				"key1": "value1",
 				"key2": "value2",
 			},
@@ -80,7 +80,7 @@ func TestConvertCtyToGo(t *testing.T) {
 				"age":    cty.NumberIntVal(30),
 				"active": cty.BoolVal(true),
 			}),
-			want: map[string]interface{}{
+			want: map[string]any{
 				"name":   "John",
 				"age":    30,
 				"active": true,
@@ -97,10 +97,10 @@ func TestConvertCtyToGo(t *testing.T) {
 					}),
 				}),
 			}),
-			want: map[string]interface{}{
-				"user": map[string]interface{}{
+			want: map[string]any{
+				"user": map[string]any{
 					"name": "Alice",
-					"tags": []interface{}{"admin", "user"},
+					"tags": []any{"admin", "user"},
 				},
 			},
 		},
@@ -124,7 +124,7 @@ func TestConvertCtyList(t *testing.T) {
 	})
 
 	got := convertCtyList(val)
-	want := []interface{}{1, 2, 3}
+	want := []any{1, 2, 3}
 
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("convertCtyList() = %v, want %v", got, want)
@@ -138,7 +138,7 @@ func TestConvertCtyMap(t *testing.T) {
 	})
 
 	got := convertCtyMap(val)
-	want := map[string]interface{}{
+	want := map[string]any{
 		"a": 1,
 		"b": 2,
 	}

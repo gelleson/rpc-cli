@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/zclconf/go-cty/cty"
+	"jsonrpc/pkg/constants"
 )
 
 // Config represents a configuration block for JSON-RPC requests
@@ -18,7 +19,7 @@ type Config struct {
 func NewConfig() *Config {
 	return &Config{
 		Headers: make(map[string]string),
-		Timeout: 30, // Default 30 seconds
+		Timeout: constants.DefaultTimeoutSeconds,
 	}
 }
 
@@ -31,7 +32,7 @@ type Request struct {
 	Headers         map[string]string `hcl:"headers,optional" json:"headers,omitempty"`
 	Timeout         int               `hcl:"timeout,optional" json:"timeout,omitempty"`
 	Config          string            `hcl:"config,optional" json:"config,omitempty"`
-	ProcessedParams interface{}       `hcl:"-" json:"params,omitempty"`
+	ProcessedParams any               `hcl:"-" json:"params,omitempty"`
 }
 
 // NewRequest creates a new Request with initialized maps
@@ -58,16 +59,16 @@ func NewHCLFile() *HCLFile {
 
 // JSONRPCRequest represents a JSON-RPC 2.0 request
 type JSONRPCRequest struct {
-	JSONRPC string      `json:"jsonrpc"`
-	Method  string      `json:"method"`
-	Params  interface{} `json:"params"`
-	ID      int         `json:"id"`
+	JSONRPC string `json:"jsonrpc"`
+	Method  string `json:"method"`
+	Params  any    `json:"params"`
+	ID      int    `json:"id"`
 }
 
-// NewJSONRPCRequest creates a new JSON-RPC 2.0 request
-func NewJSONRPCRequest(method string, params interface{}, id int) *JSONRPCRequest {
+// NewJSONRPCRequest creates a new JSON-RPC request
+func NewJSONRPCRequest(method string, params any, id int) *JSONRPCRequest {
 	return &JSONRPCRequest{
-		JSONRPC: "2.0",
+		JSONRPC: constants.DefaultJSONRPCVersion,
 		Method:  method,
 		Params:  params,
 		ID:      id,
@@ -89,9 +90,9 @@ func (r *JSONRPCResponse) IsError() bool {
 
 // RPCError represents a JSON-RPC error object
 type RPCError struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Data    any    `json:"data,omitempty"`
 }
 
 // Error implements the error interface
@@ -123,7 +124,7 @@ type EffectiveConfig struct {
 func NewEffectiveConfig() *EffectiveConfig {
 	return &EffectiveConfig{
 		Headers: make(map[string]string),
-		Timeout: 30, // Default 30 seconds
+		Timeout: constants.DefaultTimeoutSeconds,
 	}
 }
 
