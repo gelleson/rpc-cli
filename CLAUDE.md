@@ -6,7 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **rpc-cli** is a Go CLI tool for executing JSON-RPC requests defined in HCL (HashiCorp Configuration Language) configuration files. It supports flexible configuration management, multiple output formats, and automatic masking of sensitive headers.
 
-**Key Technologies**: Go 1.24, Cobra (CLI), HCL/v2 (configuration parsing), cty (type conversion)
+**Key Technologies**:
+- Go 1.24
+- Cobra (CLI framework)
+- HCL/v2 (configuration parsing)
+- cty (type conversion)
+- Bubble Tea (TUI framework)
+- Lipgloss (terminal styling)
 
 ## Common Development Commands
 
@@ -18,6 +24,11 @@ go build -o rpc-cli ./cmd/rpc-cli
 # Run a command directly
 go run ./cmd/rpc-cli ls requests.hcl
 go run ./cmd/rpc-cli run requests.hcl --url https://example.com
+go run ./cmd/rpc-cli tui requests.hcl
+
+# Run TUI (interactive mode - cannot be tested in non-interactive shell)
+./rpc-cli tui requests.hcl
+./rpc-cli tui  # Auto-discovers HCL files
 ```
 
 ### Testing
@@ -85,9 +96,10 @@ The `/generate-changelog` command parses git commits using Conventional Commits 
 ### Package Structure
 
 **cmd/rpc-cli** - CLI entry point using Cobra framework
-- Defines 4 commands: `ls`, `run`/`r`, `validate`/`v`, `version`
+- Defines 5 commands: `ls`, `run`/`r`, `validate`/`v`, `tui`, `version`
 - Handles CLI flags and argument parsing
 - Orchestrates calls to internal packages
+- Auto-discovers HCL files when no file argument provided
 
 **internal/parser** - HCL file parsing and validation (25.5% coverage)
 - `parser.go`: Main parsing logic, extracts config and request blocks
@@ -103,6 +115,15 @@ The `/generate-changelog` command parses git commits using Conventional Commits 
 **internal/output** - Result formatting and masking (10.1% coverage)
 - `formatter.go`: Multiple output formats (table, detailed, JSON)
 - `masker.go`: Sensitive header detection and masking
+
+**internal/tui** - Interactive terminal UI using Bubble Tea
+- `model.go`: Core TUI state management, event handling, Bubble Tea integration
+- `view.go`: View rendering with viewport, JSON syntax highlighting
+- `styles.go`: Visual styling and color schemes (default, dark, light, high-contrast)
+- File selection screen for browsing HCL files
+- Search/filter functionality for requests
+- Multi-select with keyboard navigation (vim-style hjkl + arrows)
+- Real-time execution results with colored output
 
 **pkg/types** - Shared types (100% coverage)
 - Core data structures: `Config`, `Request`, `HCLFile`, `JSONRPCRequest`, `ExecutionResult`, `EffectiveConfig`
@@ -131,6 +152,19 @@ Sensitive headers (Authorization, Token, API-Key, Secret, Password, Bearer) are 
 
 ### Error Handling
 Errors are categorized at multiple levels: parse errors (HCL syntax), validation errors (missing fields), network errors (timeouts, connection failures), and RPC errors (JSON-RPC error responses).
+
+### TUI Architecture
+The TUI follows the Elm Architecture (Model-View-Update) via Bubble Tea:
+- **Model**: Holds all application state (files, requests, selection, viewport, search)
+- **Update**: Processes messages (key presses, window resize, file load, execution results)
+- **View**: Renders the UI based on current model state
+
+Key TUI patterns:
+- **View States**: `ViewFileSelect`, `ViewList`, `ViewDetail`, `ViewResults`, `ViewHelp`
+- **Viewport Management**: Uses Bubble Tea viewport for scrollable content areas
+- **Search/Filter**: Real-time filtering with separate filtered request list and index mapping
+- **State Transitions**: File selection → Request list → Details → Results
+- **Content Separation**: Status lines rendered outside viewport to prevent spacing issues
 
 ## Testing Strategy
 
@@ -189,6 +223,22 @@ for _, tt := range tests {
 1. Create interface in `pkg/types/types.go`
 2. Implement in `internal/executor/executor.go`
 3. Add configuration option
+
+### Adding a New TUI View
+1. Add view constant to `internal/tui/model.go` (View enum)
+2. Implement `buildXContent()` method in `internal/tui/view.go` for viewport content
+3. Implement `renderXView()` method in `internal/tui/view.go` for full view with header/footer
+4. Add case to `Model.View()` switch statement
+5. Add case to `updateViewportContent()` switch statement
+6. Create `handleXKeys()` method for view-specific key handling
+7. Add transition logic in relevant key handlers
+
+### Modifying TUI Rendering
+**Important**: The TUI has a specific rendering structure to avoid spacing issues:
+- Status/info lines are rendered OUTSIDE the viewport (in the header area)
+- Viewport content starts directly with list items (no leading newlines)
+- Use `strings.TrimSpace(m.viewport.View())` when rendering viewport content
+- Never add blank lines at the start of `buildXContent()` methods
 
 ## Performance Notes
 
