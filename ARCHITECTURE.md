@@ -2,7 +2,7 @@
 
 ## Overview
 
-`rpc-cli` is a modular, well-tested CLI tool for executing JSON-RPC requests defined in HCL configuration files. The project follows Go best practices with a clean separation of concerns.
+`rpc-cli` is a modular, well-tested CLI tool for executing JSON-RPC requests defined in HCL configuration files. The project follows Go 1.24 best practices with a clean separation of concerns and advanced configuration management.
 
 ## Design Principles
 
@@ -10,6 +10,8 @@
 2. **Testability**: All packages include comprehensive unit tests
 3. **Maintainability**: Clear interfaces and minimal coupling between packages
 4. **Extensibility**: Easy to add new features without modifying existing code
+5. **Configuration Flexibility**: Priority-based configuration system with multiple sources
+6. **Performance**: Efficient resource usage with HTTP client reuse and lazy parsing
 
 ## Package Structure
 
@@ -36,6 +38,39 @@
 - `CLIOverrides`: Command-line overrides
 
 **Coverage**: 100%
+
+### pkg/constants (Application Constants)
+
+**Responsibility**: Centralized constants used across the application
+
+**Key Constants**:
+- `DefaultTimeoutSeconds`: Default timeout for JSON-RPC requests (30)
+- `DefaultJSONRPCVersion`: Default JSON-RPC version ("2.0")
+- `HeaderContentType`: Content type header for JSON-RPC requests
+- Output formatting constants: `MaxNameLength`, `MaxMethodLength`, `BoxWidth`
+- HTTP status code constants: `MinClientErrorStatus`
+
+### pkg/config (Configuration Management)
+
+**Responsibility**: Advanced configuration management with priority-based merging
+
+**Components**:
+
+1. **Source Interface** (`source.go`)
+   - Defines configuration source interface with priority system
+   - Implements 4 source types: DefaultConfig, NamedConfig, RequestConfig, CLIConfig
+   - Priority levels: Default (10), Named (20), Request (30), CLI (40)
+
+2. **Manager** (`manager.go`)
+   - Orchestrates configuration building for different scenarios
+   - `BuildForRequest()`: Creates effective config for HCL requests
+   - `BuildForCLI()`: Creates config from CLI-only overrides
+   - `GetConfigNameForRequest()`: Resolves configuration names
+
+3. **Merger** (`merger.go`)
+   - Core configuration merging logic
+   - Priority-based override system
+   - Builds effective configurations from multiple sources
 
 ### internal/parser (HCL Parsing)
 
@@ -75,18 +110,17 @@
    - JSON-RPC protocol implementation
    - Timeout handling
 
-2. **ConfigMerger** (`merger.go`)
-   - Merges configurations from multiple sources
-   - Implements priority order:
-     1. CLI flags (highest)
-     2. Request-level overrides
-     3. Named config profile
-     4. Default config (lowest)
-
-3. **Helpers** (`helpers.go`)
+2. **Helpers** (`helpers.go`)
    - Utility functions
    - Config name resolution
    - Parameter counting
+
+3. **Demo** (`demo.go`)
+   - Demonstration and example functionality
+   - Test request scenarios
+   - Usage examples
+
+**Note**: Configuration merging has been moved to `pkg/config/` package for better separation of concerns.
 
 **Coverage**: 34.9%
 
@@ -119,9 +153,10 @@
    ↓
 4. parser.Validator validates the parsed data
    ↓
-5. executor.Executor builds effective config (merger.ConfigMerger)
+5. config.Manager builds effective config (using pkg/config/merger.go)
+   - Sources added in priority order: Default → Named → Request → CLI
    ↓
-6. executor.Executor executes JSON-RPC request
+6. executor.Executor executes JSON-RPC request with effective config
    ↓
 7. output.Formatter formats and displays results
    ↓
@@ -132,10 +167,12 @@
 
 Configurations are merged in the following order (highest to lowest):
 
-1. **CLI Flags**: `--url`, `--header`, `--timeout`, `--config`
-2. **Request-Level**: `url`, `headers`, `timeout` in request block
-3. **Named Config**: Referenced via `config = "name"`
-4. **Default Config**: Unlabeled config block
+1. **CLI Flags**: `--url`, `--header`, `--timeout`, `--config` (Priority: 40)
+2. **Request-Level**: `url`, `headers`, `timeout` in request block (Priority: 30)
+3. **Named Config**: Referenced via `config = "name"` (Priority: 20)
+4. **Default Config**: Unlabeled config block (Priority: 10)
+
+The priority system is implemented through the `pkg/config/source.go` interface, allowing for easy extension of new configuration sources.
 
 Example:
 ```hcl
@@ -227,9 +264,19 @@ go test -race ./...
 
 ### Adding a New Config Source
 
-1. Define new override type in `pkg/types/types.go`
-2. Implement merge logic in `internal/executor/merger.go`
-3. Update priority documentation
+1. Implement the `Source` interface in `pkg/config/source.go`:
+   ```go
+   type CustomConfigSource struct {
+       // Custom fields
+   }
+
+   func (s *CustomConfigSource) Name() string { /* implementation */ }
+   func (s *CustomConfigSource) GetConfig() *types.Config { /* implementation */ }
+   func (s *CustomConfigSource) Priority() int { /* return priority level */ }
+   ```
+
+2. Add the new source in `pkg/config/manager.go` where appropriate
+3. Update priority documentation in `pkg/config/source.go`
 
 ### Adding Request Preprocessing
 
@@ -242,6 +289,7 @@ go test -race ./...
 
 2. Implement in `internal/executor/executor.go`
 3. Add configuration option
+4. Integrate with the configuration system in `pkg/config/manager.go`
 
 ## Performance Considerations
 
@@ -267,3 +315,7 @@ Potential areas for improvement:
 4. **Request History**: Save and replay requests
 5. **Interactive Mode**: REPL for building requests
 6. **Plugins**: Custom request/response processors
+7. **Configuration Files**: Support for additional config formats (YAML, TOML)
+8. **Environment Variables**: Environment variable interpolation in HCL configs
+9. **Request Batching**: Execute multiple requests in single HTTP call
+10. **Response Caching**: Cache responses for repeated requests
