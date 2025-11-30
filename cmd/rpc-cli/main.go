@@ -8,8 +8,10 @@ import (
 	"jsonrpc/internal/executor"
 	"jsonrpc/internal/output"
 	"jsonrpc/internal/parser"
+	"jsonrpc/internal/tui"
 	"jsonrpc/pkg/types"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 )
 
@@ -51,6 +53,7 @@ and executes them with flexible configuration management.`,
 		runCmd(),
 		validateCmd(),
 		versionCmd(),
+		tuiCmd(),
 	)
 
 	return cmd
@@ -267,4 +270,74 @@ func buildCLIOverrides() (*types.CLIOverrides, error) {
 	}
 
 	return overrides, nil
+}
+
+func tuiCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "tui [file]",
+		Short: "Interactive terminal user interface",
+		Long: `Launch an interactive TUI for browsing and executing JSON-RPC requests.
+
+Without a file argument, displays an interactive file browser to select from
+HCL files in the current directory. With a file argument, directly loads that file.
+
+Navigation:
+  - Arrow keys or j/k to move up/down
+  - Space to select/deselect requests
+  - Enter or l to view details
+  - r to run selected requests
+  - / to search/filter
+  - ? for help
+  - q to quit`,
+		Args: cobra.MaximumNArgs(1),
+		RunE: runTUICommand,
+	}
+}
+
+func runTUICommand(cmd *cobra.Command, args []string) error {
+	var model *tui.Model
+
+	if len(args) == 0 {
+		// Find HCL files in current directory
+		hclFiles, err := findHCLFiles()
+		if err != nil {
+			return fmt.Errorf("failed to search for HCL files: %w", err)
+		}
+
+		if len(hclFiles) == 0 {
+			return fmt.Errorf("no HCL files found in current directory")
+		}
+
+		// Always show file selection in TUI
+		model = tui.NewModelWithFileSelect(hclFiles)
+	} else {
+		// Direct file specified
+		model = tui.NewModelWithFile(args[0])
+	}
+
+	// Create and run Bubble Tea program
+	p := tea.NewProgram(
+		model,
+		tea.WithAltScreen(),
+		tea.WithMouseCellMotion(),
+	)
+
+	_, err := p.Run()
+	return err
+}
+
+func findHCLFiles() ([]string, error) {
+	entries, err := os.ReadDir(".")
+	if err != nil {
+		return nil, err
+	}
+
+	var hclFiles []string
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".hcl") {
+			hclFiles = append(hclFiles, entry.Name())
+		}
+	}
+
+	return hclFiles, nil
 }

@@ -5,12 +5,14 @@ A command-line tool for executing JSON-RPC requests defined in HCL configuration
 ## Features
 
 - 📝 **HCL Configuration**: Define JSON-RPC requests in easy-to-read HCL files
+- 🎨 **Interactive TUI**: Advanced terminal UI with search, filtering, and JSON syntax highlighting
 - 🔧 **Flexible Configuration**: Support for multiple environments and config profiles
 - 🔐 **Security**: Automatic masking of sensitive headers in output
 - ⏱️ **Performance Tracking**: Built-in duration tracking for all requests
 - 🎯 **Selective Execution**: Run all requests or specific ones by name
 - 📊 **Multiple Output Formats**: Table, detailed, and JSON output modes
 - 🔄 **Config Overrides**: Override configurations at multiple levels (CLI, request, profile, default)
+- 🔍 **Auto-discovery**: Automatically finds HCL files in current directory
 
 ## Installation
 
@@ -160,6 +162,43 @@ Validate HCL file syntax and check for errors.
 ```bash
 rpc-cli validate requests.hcl
 ```
+
+### tui - Interactive Terminal UI
+
+Launch an interactive terminal user interface for browsing and executing JSON-RPC requests.
+
+```bash
+# Auto-discover and select HCL files from current directory
+rpc-cli tui
+
+# Launch TUI with specific file (skips file selection)
+rpc-cli tui requests.hcl
+```
+
+**File Selection:**
+When running `rpc-cli tui` without arguments, an interactive file browser appears showing all HCL files in the current directory with their file sizes. Use arrow keys or `j/k` to navigate and press Enter to select a file.
+
+**TUI Features:**
+- 🔍 **Search/Filter** - Press `/` to search requests by name or method
+- ⌨️ **Vim-style Navigation** - Use `hjkl` or arrow keys
+- 📋 **Multi-select** - Space to toggle, `a` to select all, `A` to deselect all
+- 🎨 **JSON Syntax Highlighting** - Color-coded responses
+- 📊 **Real-time Results** - Execution results with response times
+- ❓ **Help Modal** - Press `?` for keyboard shortcuts
+- 🔄 **Viewport Scrolling** - Smooth scrolling for large content
+
+**Keyboard Shortcuts:**
+- `?` - Show help
+- `/` - Search/filter requests
+- `↑/k` - Move up
+- `↓/j` - Move down
+- `space` - Toggle selection
+- `enter/l` - View details
+- `r` - Run selected requests
+- `a` - Select all
+- `A` - Deselect all
+- `ESC/h` - Go back / Clear search
+- `q` - Quit
 
 ## HCL File Structure
 
